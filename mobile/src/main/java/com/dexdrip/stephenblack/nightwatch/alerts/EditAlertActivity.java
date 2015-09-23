@@ -307,7 +307,7 @@ public class EditAlertActivity extends BaseActivity {
         }
     }
 
-    private boolean verifyThreshold(double threshold) {
+    private boolean verifyThreshold(double threshold, boolean allDay, int startTime, int endTime) {
         List<AlertType> lowAlerts = AlertType.getAll(false);
         List<AlertType> highAlerts = AlertType.getAll(true);
 
@@ -318,14 +318,14 @@ public class EditAlertActivity extends BaseActivity {
         if (uuid == null) {
             // We want to make sure that for each threashold there is only one alert. Otherwise, which file should we play.
             for (AlertType lowAlert : lowAlerts) {
-                if(lowAlert.threshold == threshold) {
+                if(lowAlert.threshold == threshold && overlapping(lowAlert, allDay, startTime, endTime)) {
                     Toast.makeText(getApplicationContext(),
                             "Each alert should have it's own threshold. Please choose another threshold.",Toast.LENGTH_LONG).show();
                     return false;
                 }
             }
             for (AlertType highAlert : highAlerts) {
-                if(highAlert.threshold == threshold) {
+                if(highAlert.threshold == threshold && overlapping(highAlert, allDay, startTime, endTime)) {
                     Toast.makeText(getApplicationContext(),
                             "Each alert should have it's own threshold. Please choose another threshold.",Toast.LENGTH_LONG).show();
                     return false;
@@ -335,7 +335,7 @@ public class EditAlertActivity extends BaseActivity {
         // high alerts have to be higher than all low alerts...
         if(above) {
             for (AlertType lowAlert : lowAlerts) {
-                if(threshold < lowAlert.threshold  ) {
+                if(threshold < lowAlert.threshold  && overlapping(lowAlert, allDay, startTime, endTime)) {
                     Toast.makeText(getApplicationContext(),
                             "High alert threshold has to be higher than all low alerts. Please choose another threshold.",Toast.LENGTH_LONG).show();
                     return false;
@@ -344,7 +344,7 @@ public class EditAlertActivity extends BaseActivity {
         } else {
             // low alert has to be lower than all high alerts
             for (AlertType highAlert : highAlerts) {
-                if(threshold > highAlert.threshold  ) {
+                if(threshold > highAlert.threshold  && overlapping(highAlert, allDay, startTime, endTime)) {
                     Toast.makeText(getApplicationContext(),
                             "Low alert threshold has to be lower than all high alerts. Please choose another threshold.",Toast.LENGTH_LONG).show();
                     return false;
@@ -353,6 +353,23 @@ public class EditAlertActivity extends BaseActivity {
         }
 
         return true;
+    }
+
+    private boolean overlapping(AlertType at, boolean allday, int startTime, int endTime){
+        //shortcut: if one is all day, they must overlap
+        if(at.all_day || allday) {
+            return true;
+        }
+        int st1 = at.start_time_minutes;
+        int st2 = startTime;
+        int et1 = at.end_time_minutes;
+        int et2 = endTime;
+        int fullDay = AlertType.toTime(24, 0);
+
+        return  st1 <= st2 && et1 > st2 ||
+                st1 <= st2 && (et2 > fullDay) && et2 % fullDay > st1 ||
+                st2 <= st1 && et2 > st1 ||
+                st2 <= st1 && et1 > fullDay && et1 % fullDay > st2;
     }
 
     private double parseDouble(String str) {
@@ -391,9 +408,6 @@ public class EditAlertActivity extends BaseActivity {
                     return;
 
                 threshold = unitsConvertFromDisp(threshold);
-                if(!verifyThreshold(threshold)) {
-                    return;
-                }
 
                 alertReraise = 1;
                 Integer alterReraiseInt = parseInt(reraise.getText().toString());
@@ -428,6 +442,10 @@ public class EditAlertActivity extends BaseActivity {
                     Toast.makeText(getApplicationContext(), "start time and end time of alert can not be equal",Toast.LENGTH_LONG).show();
                     return;
                 }
+                if(!verifyThreshold(threshold, allDay, timeStart, timeEnd)) {
+                    return;
+                }
+
                 boolean vibrate = checkboxVibrate.isChecked();
                 boolean overrideSilentMode = checkboxAlertOverride.isChecked();
 
@@ -741,9 +759,6 @@ public class EditAlertActivity extends BaseActivity {
             return;
 
         threshold = unitsConvertFromDisp(threshold);
-        if(!verifyThreshold(threshold)) {
-            return;
-        }
 
         int timeStart = AlertType.toTime(startHour, startMinute);
         int timeEnd = AlertType.toTime(endHour, endMinute);
@@ -764,6 +779,11 @@ public class EditAlertActivity extends BaseActivity {
             Toast.makeText(getApplicationContext(), "start time and end time of alert can not be equal",Toast.LENGTH_LONG).show();
             return;
         }
+
+        if(!verifyThreshold(threshold, allDay, timeStart, timeEnd)) {
+            return;
+        }
+
         boolean vibrate = checkboxVibrate.isChecked();
         boolean overrideSilentMode = checkboxAlertOverride.isChecked();
         String mp3_file = audioPath;
