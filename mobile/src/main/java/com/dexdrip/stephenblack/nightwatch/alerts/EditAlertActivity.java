@@ -364,12 +364,11 @@ public class EditAlertActivity extends BaseActivity {
         int st2 = startTime;
         int et1 = at.end_time_minutes;
         int et2 = endTime;
-        int fullDay = AlertType.toTime(24, 0);
 
         return  st1 <= st2 && et1 > st2 ||
-                st1 <= st2 && (et2 > fullDay) && et2 % fullDay > st1 ||
+                st1 <= st2 && (et2 < st2) && et2 > st1 || //2nd timeframe passes midnight
                 st2 <= st1 && et2 > st1 ||
-                st2 <= st1 && et1 > fullDay && et1 % fullDay > st2;
+                st2 <= st1 && (et1 < st1) && et1 > st2; //1st timeframe passes midnight
     }
 
     private double parseDouble(String str) {
@@ -435,7 +434,7 @@ public class EditAlertActivity extends BaseActivity {
                     timeEnd++;
                 }
                 if(timeStart == AlertType.toTime(0, 0) &&
-                   timeEnd == AlertType.toTime(24, 0)) {
+                        timeEnd == AlertType.toTime(24, 0)) {
                     allDay = true;
                 }
                 if (timeStart == timeEnd && (allDay==false)) {
@@ -513,7 +512,7 @@ public class EditAlertActivity extends BaseActivity {
                 AlertDialog dialog = builder.create();
                 dialog.show();
             }
-       }); //- See more at: http://blog.kerul.net/2011/12/pick-file-using-intentactiongetcontent.html#sthash.c8xtIr1Y.dpuf
+        }); //- See more at: http://blog.kerul.net/2011/12/pick-file-using-intentactiongetcontent.html#sthash.c8xtIr1Y.dpuf
 
         checkboxAllDay.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             //          @Override
@@ -710,7 +709,7 @@ public class EditAlertActivity extends BaseActivity {
                     });
                     d.show();
                 }
-                    return false;
+                return false;
 
             }});
 
