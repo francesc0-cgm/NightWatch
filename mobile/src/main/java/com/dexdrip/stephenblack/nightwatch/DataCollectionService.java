@@ -180,7 +180,7 @@ public class DataCollectionService extends Service {
             context.sendBroadcast(updateIntent);
             //quick fix: stay awake a bit to handover wakelog
             powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
-                    "sendToWatch").acquire(10000);
+                    "sendToWatch").acquire(20000);
         }
         context.startService(new Intent(context, Notifications.class));
         if(wakeLock != null && wakeLock.isHeld()) { wakeLock.release(); }
